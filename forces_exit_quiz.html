@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>forces_exit_quiz</title>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 720px;
+}
+
+.question {
+    margin-bottom: 25px;
+    padding: 18px;
+    background: #2a2a2a;
+    border-radius: 8px;
+}
+
+.answers button {
+    display: block;
+    margin: 6px 0;
+    padding: 8px 12px;
+    width: 100%;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: left;
+}
+
+.answers button:hover {
+    background: #005f99;
+}
+
+.correct {
+    background: #2e7d32 !important;
+}
+
+.wrong {
+    background: #c62828 !important;
+}
+
+#score {
+    margin-top: 25px;
+    font-size: 18px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>Forces Exit Quiz</h2>
+<div id="quiz"></div>
+<div id="score"></div>
+</div>
+
+<script>
+
+let questions = [
+{
+question: `You throw a stone at an angle. At the top of the trajectory, the stone’s 
+acceleration will be dependent on`,
+options: [
+{text: `the strength that you threw the rock`, correct: false},
+{text: `the rock’s mass`, correct: false},
+{text: `if you are on a mountain or not`, correct: true},
+{text: `none of these apply`, correct: false},
+]
+},
+{
+question: `A lineally-time dependent horizontal force acts on mass that is located at 
+some height H from the ground. The time that it will take the mass to hit 
+the ground is`,
+options: [
+{text: `proportionally dependent on the force’s magnitude`, correct: false},
+{text: `independent of the force’s magnitude`, correct: true},
+{text: `inversely proportional to the force’s magnitude`, correct: false},
+]
+},
+{
+question: `A box rests on an inclined plane of angle Z where the angle is defined with 
+respect to the ground. This means that the friction coefficient  is`,
+options: [
+{text: `greater than tan(Z)`, correct: true},
+{text: `equal to tan(Z)`, correct: false},
+{text: `less than tan(Z)`, correct: false},
+]
+},
+{
+question: `The acceleration of a box sliding down a rough inclined plane of angle Z 
+will always be`,
+options: [
+{text: `g sin(Z)-μ g cos(Z)`, correct: false},
+{text: `g cos(Z)-μ g sin(Z)`, correct: false},
+{text: `more information is needed`, correct: true},
+]
+},
+{
+question: `Assume the accelerat ion of a box down a rough plane is 
+a = gsin(Z ) − μgcos(Z ). Then if a < 0 this means that the box will`,
+options: [
+{text: `slide up`, correct: false},
+{text: `slide down`, correct: false},
+{text: `stay put`, correct: true},
+]
+},
+{
+question: `The friction coefficient values range from`,
+options: [
+{text: `0 to 1`, correct: true},
+{text: `0 to 0.99`, correct: false},
+{text: `none of these`, correct: false},
+]
+},
+{
+question: `Friction is a force that`,
+options: [
+{text: `always exists`, correct: false},
+{text: `it requires the existence of another competing force to be estimated`, correct: true},
+{text: `is always positive`, correct: false},
+{text: `is always negative`, correct: false},
+]
+},
+{
+question: `A car is driving around a roundabout with constant speed on a zero-friction 
+i.e. icy road. The centripetal force is essentially`,
+options: [
+{text: `the normal force`, correct: false},
+{text: `the car’s weight`, correct: false},
+{text: `the car cannot perform the desired action`, correct: true},
+]
+},
+{
+question: `An object of mass m1  lies on a horizontal surface with friction and is 
+connected with a massless and inextensible string to a pulley from which 
+another less massive object  m2  (m1>m2) is hanging vertically. The 
+accelerations of m1 and m2 will be`,
+options: [
+{text: `a1=a2>0`, correct: true},
+{text: `a1>a2`, correct: false},
+{text: `a1<a2`, correct: false},
+{text: `a1=a2=0`, correct: false},
+]
+},
+{
+question: `RMS Titanic is connected via a mass string to a massless (dummy) pulley to 
+a hanging US penny. If friction is zero across all surfaces then the RMS 
+Titanic’s acceleration will be`,
+options: [
+{text: `small but not zero`, correct: true},
+{text: `zero`, correct: false},
+]
+},
+{
+question: `What defines the acceleration of two hanging masses to the left and right of 
+a massless (dummy) pulley is`,
+options: [
+{text: `the masses`, correct: false},
+{text: `the tensions and the masses`, correct: true},
+{text: `the tensions`, correct: false},
+]
+},
+{
+question: `The fact that accelerations of the objets involved in a dummy pulley motion 
+are equal is direct stipulation that`,
+options: [
+{text: `the string does not break`, correct: false},
+{text: `the string does not slack`, correct: false},
+{text: `all of these`, correct: true},
+{text: `none of these`, correct: false},
+]
+},
+{
+question: `You twirl a stone attached to a string in front on you (along the vertical). 
+The tension on the string will depend on`,
+options: [
+{text: `the mass and speed of the stone only`, correct: false},
+{text: `the mass of the stone only`, correct: false},
+{text: `the mass, the speed and the position of the stone only`, correct: true},
+{text: `none of these apply`, correct: false},
+]
+},
+{
+question: `You twirl a stone attached to a string in front on you (along the vertical). 
+The linear (aka tangential) acceleration of the stone is provided by`,
+options: [
+{text: `the tension only`, correct: false},
+{text: `a component of the weight only`, correct: false},
+{text: `a combination of a component of the tension on the string and the weight`, correct: true},
+{text: `none of these apply`, correct: false},
+]
+},
+{
+question: `You twirl a stone attached to a string in front on you (along the vertical). 
+The radial acceleration of the stone is provided by`,
+options: [
+{text: `the tension only`, correct: true},
+{text: `a component of the weight only`, correct: false},
+{text: `a combination of a component of the tension on the string and the weight`, correct: false},
+{text: `none of these apply`, correct: false},
+]
+},
+
+];
+
+const quizDiv = document.getElementById("quiz");
+let score = 0;
+let answered = 0;
+
+questions.forEach((q, index) => {
+
+    q.options.sort(() => Math.random() - 0.5);
+
+    const questionDiv = document.createElement("div");
+    questionDiv.className = "question";
+
+    const questionText = document.createElement("p");
+    questionText.innerHTML = "<strong>" + (index+1) + ". " + q.question + "</strong>";
+    questionDiv.appendChild(questionText);
+
+    const answersDiv = document.createElement("div");
+    answersDiv.className = "answers";
+
+    q.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.innerText = option.text;
+
+        btn.onclick = () => {
+            if (btn.classList.contains("correct") || btn.classList.contains("wrong")) return;
+
+            if (option.correct) {
+                btn.classList.add("correct");
+                score++;
+            } else {
+                btn.classList.add("wrong");
+            }
+
+            answered++;
+            if (answered === questions.length) {
+                document.getElementById("score").innerText =
+                    "Final Score: " + score + " / " + questions.length;
+            }
+        };
+
+        answersDiv.appendChild(btn);
+    });
+
+    questionDiv.appendChild(answersDiv);
+    quizDiv.appendChild(questionDiv);
+});
+
+</script>
+
+</body>
+</html>

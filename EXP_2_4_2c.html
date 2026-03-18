@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_4_2c.html</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: monospace;
+    padding: 15px;
+}
+
+.editor {
+    display: flex;
+    border: 1px solid #444;
+    height: 300px;
+}
+
+#lineNumbers {
+    background: #111;
+    color: #00ff00;
+    padding: 10px 8px;
+    margin: 0;
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+    white-space: pre;
+    line-height: 1.4em;
+}
+
+#code {
+    flex: 1;
+    background: #111;
+    color: white;
+    border: none;
+    padding: 10px;
+    resize: none;
+    overflow: auto;
+    white-space: pre;
+    line-height: 1.4em;
+    font-family: monospace;
+}
+
+button {
+    margin-top: 10px;
+    margin-right: 6px;
+    padding: 8px 14px;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#output {
+    background: #111;
+    padding: 10px;
+    margin-top: 10px;
+    min-height: 50px;
+    white-space: pre-wrap;
+}
+
+#plot {
+    margin-top: 10px;
+    border: 1px solid #555;
+    max-width: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<h3>EXP_2_4_2c.html</h3>
+
+<div class="editor">
+<pre id="lineNumbers"></pre>
+<textarea id="code" wrap="off">import numpy as np
+import matplotlib.pyplot as plt
+
+import matplotlib
+matplotlib.use("Agg")
+
+plt.rcParams.update({
+    'figure.facecolor': 'white',
+    'axes.facecolor': 'white',
+    'axes.labelsize': 12,
+    'axes.titlesize': 14,
+    'axes.linewidth': 1.2,
+    'xtick.labelsize': 10,
+    'ytick.labelsize': 10
+})
+
+from scipy.optimize import curve_fit
+
+# Define the model function
+def model(t, A, b):
+    return A * (1 - np.exp(-b * t))
+
+# Predefined data
+data = """
+0 0.88
+0.53 1.69
+1.05 2.46
+1.58 3.29
+2.11 3.97
+2.63 4.74
+3.16 5.20
+3.68 5.77
+4.21 6.51
+4.74 6.94
+5.26 7.12
+5.79 7.92
+6.32 8.35
+6.84 8.98
+7.37 9.33
+7.89 9.51
+8.42 9.75
+8.95 9.97
+9.47 9.89
+10.00 10.12
+"""
+
+# Process the data
+data = [list(map(float, line.split())) for line in data.strip().split('\n')]
+data = np.array(data)
+t_data = data[:, 0]
+y_data = data[:, 1]
+
+# Initial guesses for A and b
+initial_guess = [max(y_data), 0.1]
+
+# Fit the model to the data
+popt, pcov = curve_fit(model, t_data, y_data, p0=initial_guess)
+A_fit, b_fit = popt
+
+# Plot the original data and the fitted curve
+plt.scatter(t_data, y_data, label='Data')
+t_fit = np.linspace(min(t_data), max(t_data), 100)
+y_fit = model(t_fit, A_fit, b_fit)
+plt.plot(t_fit, y_fit, label=f'Fit: A={A_fit:.2f}, b={b_fit:.2f}', color='red')
+plt.xlabel('Time (t)')
+plt.ylabel('Value (y)')
+plt.title('Exponential Growth Fit')
+plt.legend()
+plt.grid(True)
+
+
+# Print the fitted parameter b
+print(f'Fitted parameter b: {b_fit:.4f}')
+
+plt.tight_layout()
+plt.savefig("plot.png")
+plt.savefig("plot.pdf")
+plt.savefig("plot.svg")
+</textarea>
+</div>
+
+<button onclick="runCode()">Run</button>
+<button onclick="downloadPlot('png')">Download PNG</button>
+<button onclick="downloadPlot('pdf')">Download PDF</button>
+<button onclick="downloadPlot('svg')">Download SVG</button>
+
+<div id="output"></div>
+<img id="plot"/>
+
+<script>
+let pyodideReady = loadPyodide();
+let pyodide;
+
+const code = document.getElementById("code");
+const lineNumbers = document.getElementById("lineNumbers");
+
+function updateLineNumbers() {
+    const lines = code.value.split("\n").length;
+    let numbers = "";
+    for (let i = 1; i <= lines; i++) {
+        numbers += i + "\n";
+    }
+    lineNumbers.textContent = numbers;
+}
+
+code.addEventListener("input", updateLineNumbers);
+code.addEventListener("scroll", () => {
+    lineNumbers.scrollTop = code.scrollTop;
+});
+
+updateLineNumbers();
+
+async function runCode() {
+    pyodide = await pyodideReady;
+
+    document.getElementById("output").innerText = "Running...";
+    document.getElementById("plot").src = "";
+
+    await pyodide.loadPackage(["numpy","matplotlib","scipy"]);
+
+    try {
+        await pyodide.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+`);
+
+        await pyodide.runPythonAsync(code.value);
+
+        let output = await pyodide.runPythonAsync("sys.stdout.getvalue()");
+        document.getElementById("output").innerText = output;
+
+        let img = pyodide.FS.readFile("plot.png", {encoding:"binary"});
+        let blob = new Blob([img], {type:"image/png"});
+        document.getElementById("plot").src = URL.createObjectURL(blob);
+
+    } catch(err) {
+        document.getElementById("output").innerText = err;
+    }
+}
+
+function downloadPlot(format) {
+    try {
+        let file = pyodide.FS.readFile("plot." + format, {encoding:"binary"});
+        let blob = new Blob([file], {type:"application/octet-stream"});
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "plot." + format;
+        link.click();
+    } catch(err) {
+        alert("Run the code first to generate the plot.");
+    }
+}
+</script>
+
+</body>
+</html>

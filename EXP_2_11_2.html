@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_11_2.html</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: monospace;
+    padding: 15px;
+}
+
+.editor {
+    display: flex;
+    border: 1px solid #444;
+    height: 300px;
+}
+
+#lineNumbers {
+    background: #111;
+    color: #00ff00;
+    padding: 10px 8px;
+    margin: 0;
+    text-align: right;
+    overflow: hidden;
+    white-space: pre;
+}
+
+#code {
+    flex: 1;
+    background: #111;
+    color: white;
+    border: none;
+    padding: 10px;
+    resize: none;
+    overflow: auto;
+    white-space: pre;
+}
+
+button {
+    margin-top: 10px;
+    padding: 8px 14px;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#output {
+    background: #111;
+    padding: 10px;
+    margin-top: 10px;
+    min-height: 60px;
+    white-space: pre-wrap;
+}
+</style>
+</head>
+
+<body>
+
+<h3>EXP_2_11_2.html</h3>
+
+<div class="editor">
+<pre id="lineNumbers"></pre>
+<textarea id="code" wrap="off">import numpy as np
+
+# TRAPPIST-1 System (Data in AU and Earth years)
+trappist_1 = {
+    "TRAPPIST-1b": (0.011, 1.51 / 365),
+    "TRAPPIST-1c": (0.015, 2.42 / 365),
+    "TRAPPIST-1d": (0.022, 4.05 / 365),
+    "TRAPPIST-1e": (0.029, 6.10 / 365),
+    "TRAPPIST-1f": (0.038, 9.21 / 365),
+    "TRAPPIST-1g": (0.046, 12.35 / 365),
+    "TRAPPIST-1h": (0.064, 18.77 / 365),
+}
+
+# Function to calculate T^2 / r^3
+def kepler_ratio(data, system_name):
+    print(f"{system_name}:")
+    ratios = []
+    for planet, (r, T) in data.items():
+        ratio = (T**2) / (r**3)
+        print(f"{planet}: T^2/r^3 = {ratio:.4f}")
+        ratios.append(ratio)
+    print(f"Average Ratio: {np.mean(ratios):.4f}\n")
+
+# Run Kepler's ratio for the TRAPPIST-1 system
+kepler_ratio(trappist_1, "TRAPPIST-1 System")
+</textarea>
+</div>
+
+<button onclick="runCode()">Run</button>
+
+<div id="output"></div>
+
+<script>
+let pyodideReady = loadPyodide();
+let pyodide;
+
+const code = document.getElementById("code");
+const lineNumbers = document.getElementById("lineNumbers");
+
+function updateLineNumbers() {
+    const lines = code.value.split("\n").length;
+    let numbers = "";
+    for (let i = 1; i <= lines; i++) numbers += i + "\n";
+    lineNumbers.textContent = numbers;
+}
+
+code.addEventListener("input", updateLineNumbers);
+code.addEventListener("scroll", () => lineNumbers.scrollTop = code.scrollTop);
+updateLineNumbers();
+
+async function runCode() {
+    pyodide = await pyodideReady;
+
+    document.getElementById("output").innerText = "Running...";
+
+    await pyodide.loadPackage(["numpy"]);
+
+    try {
+        await pyodide.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+`);
+
+        await pyodide.runPythonAsync(code.value);
+        let output = await pyodide.runPythonAsync("sys.stdout.getvalue()");
+        document.getElementById("output").innerText = output;
+    } catch(err) {
+        document.getElementById("output").innerText = err;
+    }
+}
+</script>
+
+</body>
+</html>

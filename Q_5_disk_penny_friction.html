@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Penny on a Spinning Disk – Friction & Omega</title>
+  <style>
+    :root { --bg:#0b0e13; --fg:#e6e8eb; --muted:#9aa4b2; --accent:#4cc9f0; --accent2:#b5e48c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+           color: var(--fg); background: radial-gradient(1200px 800px at 70% -10%, #18202a 0%, var(--bg) 40%); }
+    header { padding: 16px 20px; border-bottom: 1px solid #202734; display:flex; align-items:center; gap:12px; }
+    header h1 { font-size: clamp(16px, 2.6vw, 22px); margin: 0; font-weight: 700; letter-spacing:.2px; }
+    .wrap { display:grid; grid-template-columns: 360px 1fr; gap: 16px; padding: 16px; max-width: 1200px; margin: 0 auto; }
+    .panel { background: #111822; border: 1px solid #1d2633; border-radius: 14px; padding: 14px 14px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .panel h2 { font-size: 14px; margin: 0 0 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+    .control { margin: 10px 0 12px; }
+    .control label { display:flex; justify-content:space-between; align-items:center; font-size: 14px; color: var(--muted); }
+    .control input[type="range"] { width: 100%; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .readout { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color: #c8d1dc; background: #0e141d; border:1px solid #1f2836; border-radius: 8px; padding: 8px; height: 116px; overflow:auto; }
+    .btns { display:flex; gap:8px; flex-wrap:wrap; }
+    button { cursor: pointer; background: linear-gradient(180deg, #1b2636, #111826); color: #e9f1ff; border:1px solid #263247; padding: 8px 10px; border-radius: 10px; font-weight:600; }
+    button:hover { filter: brightness(1.1); }
+    canvas { width: 100%; height: 100%; display: block; background: radial-gradient(circle at 50% 40%, #0d1420, #0a0f17); border:1px solid #1c2533; border-radius: 14px; }
+    .legend { display:flex; gap: 12px; align-items:center; font-size:12px; color: var(--muted); margin-top:6px; }
+    .legend span { display:inline-flex; align-items:center; gap:6px; }
+    .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Penny on a Spinning Disk — control friction (μ) and angular speed (ω)</h1>
+  </header>
+  <div class="wrap">
+    <aside class="panel">
+      <h2>Parameters</h2>
+      <div class="control">
+        <label>Friction μ <span><span id="muVal">0.30</span></span></label>
+        <input id="mu" type="range" min="0" max="1" step="0.01" value="0.30">
+      </div>
+      <div class="control">
+        <label>Angular speed ω (rad/s) <span id="omegaVal">4.0</span></label>
+        <input id="omega" type="range" min="0" max="20" step="0.1" value="4.0">
+      </div>
+      <div class="control">
+        <label>Initial radius r₀ (m) <span id="r0Val">0.60</span></label>
+        <input id="r0" type="range" min="0.10" max="0.95" step="0.01" value="0.60">
+      </div>
+      <div class="row">
+        <div class="control">
+          <label>Disk radius R (m) <span id="RVal">1.00</span></label>
+          <input id="R" type="range" min="0.5" max="1.5" step="0.01" value="1.00">
+        </div>
+        <div class="control">
+          <label>Penny mass m (kg) <span id="mVal">0.01</span></label>
+          <input id="m" type="range" min="0.005" max="0.05" step="0.001" value="0.010">
+        </div>
+      </div>
+      <div class="btns">
+        <button id="reset">Reset</button>
+        <button id="pause">Pause</button>
+        <button id="step">Step</button>
+        <button id="export">Export CSV</button>
+        <button id="randomize">Randomize</button>
+      </div>
+      <div style="margin-top:10px" class="muted">
+        <div><strong>Status:</strong> <span id="status">sticking</span></div>
+        <div><strong></strong> </div>
+      </div>
+      <div class="legend">
+        <span><i class="dot" style="background:#4cc9f0"></i>penny</span>
+        <span><i class="dot" style="background:#b5e48c"></i>trail</span>
+        <span><i class="dot" style="background:#ffb703"></i>tangent at departure</span>
+      </div>
+      <div class="control">
+        <h2>Readout</h2>
+        <div id="readout" class="readout"></div>
+      </div>
+    </aside>
+    <main class="panel" style="min-height:520px;display:grid;grid-template-rows:auto 1fr; gap:8px;">
+      <h2>Simulation</h2>
+      <canvas id="sim" width="900" height="620"></canvas>
+    </main>
+  </div>
+
+  <script>
+  // --- Physical model (2D, horizontal disk) ---
+  // While on the disk: either
+  //  (A) STICKING: if μ g >= r ω^2  → v = ω × r (static friction supplies centripetal)
+  //  (B) SLIDING: else kinetic friction with |f| = μ m g opposite relative velocity (v - ω×r)
+  // Leaves disk when |r| >= R → then AIRBORNE (no forces): straight-line inertial motion.
+
+  const canvas = document.getElementById('sim');
+  const ctx = canvas.getContext('2d');
+
+  const ui = {
+    mu: document.getElementById('mu'), muVal: document.getElementById('muVal'),
+    omega: document.getElementById('omega'), omegaVal: document.getElementById('omegaVal'),
+    r0: document.getElementById('r0'), r0Val: document.getElementById('r0Val'),
+    R: document.getElementById('R'), RVal: document.getElementById('RVal'),
+    m: document.getElementById('m'), mVal: document.getElementById('mVal'),
+    status: document.getElementById('status'),
+    readout: document.getElementById('readout'),
+    reset: document.getElementById('reset'), pause: document.getElementById('pause'), step: document.getElementById('step'),
+    export: document.getElementById('export'), randomize: document.getElementById('randomize'),
+  };
+
+  // world scale: meters → pixels
+  const pxPerM = 220; // 1 m ≈ 220 px
+  const g = 9.81; // m/s^2
+
+  let state, running=true, lastT=null, csv=[];
+
+  function omegaCrossR(omega, r){
+    // ω along +z, r = (x,y)
+    return { x: -omega * r.y, y: omega * r.x };
+  }
+  function len(v){ return Math.hypot(v.x, v.y); }
+  function add(a,b){ return {x:a.x+b.x, y:a.y+b.y}; }
+  function sub(a,b){ return {x:a.x-b.x, y:a.y-b.y}; }
+  function mul(a, s){ return {x:a.x*s, y:a.y*s}; }
+
+  function reset(simRand=false){
+    const R = parseFloat(ui.R.value);
+    const r0 = simRand ? (0.15 + Math.random()*0.8) * R : parseFloat(ui.r0.value);
+    const theta0 = simRand ? Math.random()*Math.PI*2 : Math.PI/6;
+    const omega = parseFloat(ui.omega.value);
+
+    state = {
+      mu: parseFloat(ui.mu.value),
+      omega,
+      R,
+      m: parseFloat(ui.m.value),
+      mode: 'sticking', // 'sticking' | 'sliding' | 'airborne'
+      r: { x: r0*Math.cos(theta0), y: r0*Math.sin(theta0) },
+      v: omegaCrossR(omega, { x: r0*Math.cos(theta0), y: r0*Math.sin(theta0) }),
+      t: 0,
+      tangent: null,
+      trail: []
+    };
+
+    csv = [["t","x","y","vx","vy","mode","r","omega","mu"]];
+    lastT = null;
+    running = true;
+    ui.pause.textContent = 'Pause';
+    syncLabels();
+    pushCSV();
+    draw();
+  }
+
+  function syncLabels(){
+    ui.muVal.textContent = parseFloat(ui.mu.value).toFixed(2);
+    ui.omegaVal.textContent = parseFloat(ui.omega.value).toFixed(1);
+    ui.r0Val.textContent = parseFloat(ui.r0.value).toFixed(2);
+    ui.RVal.textContent = parseFloat(ui.R.value).toFixed(2);
+    ui.mVal.textContent = parseFloat(ui.m.value).toFixed(3);
+  }
+
+  function worldToCanvas(p){
+    const cx = canvas.width/2, cy = canvas.height/2 + 30; // a bit lower
+    return { x: cx + p.x*pxPerM, y: cy - p.y*pxPerM };
+  }
+
+  function pushCSV(){
+    const {t,r,v,mode} = state;
+    csv.push([t.toFixed(5), r.x.toFixed(6), r.y.toFixed(6), v.x.toFixed(6), v.y.toFixed(6), mode, len(r).toFixed(6), state.omega.toFixed(5), state.mu.toFixed(4)]);
+  }
+
+  function integrate2(dt){
+    // Update parameters (live)
+    state.mu = parseFloat(ui.mu.value);
+    state.omega = parseFloat(ui.omega.value);
+    state.R = parseFloat(ui.R.value);
+    state.m = parseFloat(ui.m.value);
+
+    const r = state.r; const v = state.v; const m = state.m; const omega = state.omega; const mu = state.mu;
+
+    if(state.mode === 'airborne'){
+      // No forces → uniform motion
+      state.r = add(r, mul(v, dt));
+      state.t += dt; state.trail.push({...state.r}); if(state.trail.length>1500) state.trail.shift();
+      ui.status.textContent = 'airborne (inertial straight-line)';
+      pushCSV();
+      return;
+    }
+
+    // On disk
+    const u = omegaCrossR(omega, r);           // surface velocity at contact point
+    const rel = sub(v, u);                      // relative slip velocity
+    const rmag = len(r);
+
+    const canStick = (mu * g >= rmag * omega * omega);
+
+    if(canStick){
+      // enforce sticking
+      state.mode = 'sticking';
+      state.v = u;                              // exactly corotate
+    } else {
+      // kinetic friction opposes slip, magnitude μ m g
+      state.mode = 'sliding';
+      if(rel.x !== 0 || rel.y !== 0){
+        const relMag = len(rel);
+        const f = mul(relMag>1e-12 ? mul(rel, -1/relMag) : {x:0,y:0}, mu * m * g);
+        const a = mul(f, 1/m);
+        state.v = add(v, mul(a, dt));
+      }
+    }
+
+    // Integrate position
+    state.r = add(state.r, mul(state.v, dt));
+    state.t += dt;
+    state.trail.push({...state.r}); if(state.trail.length>1500) state.trail.shift();
+
+    // Leave the disk if beyond edge
+    if(len(state.r) >= state.R && state.mode !== 'airborne'){
+      // store tangent direction at departure for visualization
+      const tangent = { x: -state.r.y/len(state.r), y: state.r.x/len(state.r) };
+      state.tangent = { p: {...state.r}, dir: tangent };
+      state.mode = 'airborne';
+    }
+
+    ui.status.textContent = state.mode + (state.mode==='sticking' ? ' (v = ω × r)' : state.mode==='sliding' ? ' (kinetic friction)' : '');
+    pushCSV();
+  }
+
+  function draw(){
+    const cx = canvas.width/2, cy = canvas.height/2 + 30;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Disk
+    const Rp = state.R * pxPerM;
+    ctx.save();
+    ctx.translate(cx, cy);
+    // subtle grid
+    ctx.globalAlpha = .14;
+    for(let r=50;r<Rp;r+=50){
+      ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.strokeStyle = '#2a3547'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Disk boundary
+    ctx.beginPath();
+    ctx.arc(0,0,Rp,0,Math.PI*2);
+    ctx.strokeStyle = '#3a4a64'; ctx.lineWidth = 3; ctx.stroke();
+
+    // Spin arrow
+    const arrowR = Math.min(Rp-20, 120);
+    ctx.beginPath(); ctx.arc(0,0,arrowR, -Math.PI/4, Math.PI/1.2);
+    ctx.strokeStyle = '#7ad7ff'; ctx.lineWidth = 2; ctx.stroke();
+    // arrow head
+    const ah = {x: Math.cos(Math.PI/1.2)*arrowR, y: Math.sin(Math.PI/1.2)*arrowR};
+    ctx.beginPath(); ctx.moveTo(ah.x, ah.y);
+    ctx.lineTo(ah.x-10, ah.y-6); ctx.lineTo(ah.x-3, ah.y+10); ctx.closePath();
+    ctx.fillStyle = '#7ad7ff'; ctx.fill();
+
+    ctx.restore();
+
+    // Trail
+    ctx.beginPath();
+    for(let i=0;i<state.trail.length;i++){
+      const p = worldToCanvas(state.trail[i]);
+      if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    }
+    ctx.strokeStyle = '#b5e48c'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // Penny
+    const pC = worldToCanvas(state.r);
+    ctx.beginPath();
+    ctx.arc(pC.x, pC.y, 7, 0, Math.PI*2);
+    ctx.fillStyle = '#4cc9f0';
+    ctx.shadowColor = '#4cc9f0'; ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Tangent at departure
+    if(state.tangent){
+      const A = worldToCanvas(state.tangent.p);
+      const dir = state.tangent.dir;
+      const B = worldToCanvas(add(state.tangent.p, mul(dir, state.R*0.6)));
+      ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x,B.y);
+      ctx.strokeStyle = '#ffb703'; ctx.lineWidth = 2; ctx.setLineDash([6,6]); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // HUD readout
+    const rmag = len(state.r);
+    const rel = sub(state.v, omegaCrossR(state.omega, state.r));
+    ui.readout.innerHTML =
+      `t = ${state.t.toFixed(2)} s\n`+
+      `r = ${rmag.toFixed(3)} m,  R = ${state.R.toFixed(2)} m\n`+
+      `|rel v| = ${len(rel).toFixed(4)} m/s\n`+
+      `μ g = ${(state.mu*g).toFixed(3)}  vs  r ω² = ${(rmag*state.omega*state.omega).toFixed(3)}\n`+
+      `mode: ${state.mode}`;
+  }
+
+  // --- NEW: numerically stable integrator to prevent radial drift during sticking ---
+  function integrate2(dt){
+    // Update parameters (live)
+    state.mu = parseFloat(ui.mu.value);
+    state.omega = parseFloat(ui.omega.value);
+    state.R = parseFloat(ui.R.value);
+    state.m = parseFloat(ui.m.value);
+
+    const r = state.r; const v = state.v; const m = state.m; const omega = state.omega; const mu = state.mu;
+
+    if(state.mode === 'airborne'){
+      // No forces → uniform motion
+      state.r = add(r, mul(v, dt));
+      state.t += dt; state.trail.push({...state.r}); if(state.trail.length>1500) state.trail.shift();
+      ui.status.textContent = 'airborne (inertial straight-line)';
+      pushCSV();
+      return;
+    }
+
+    // On disk
+    const u = omegaCrossR(omega, r);           // surface velocity at contact point
+    const rel = sub(v, u);                      // relative slip velocity
+    const rmag = len(r);
+
+    const canStick = (mu * g >= rmag * omega * omega);
+
+    if(canStick){
+      // --- STICKING (exact kinematics): keep radius fixed and rotate by ω dt ---
+      state.mode = 'sticking';
+      const rr = rmag; // lock radius
+      let theta = Math.atan2(state.r.y, state.r.x);
+      theta += omega * dt; // rigid rotation
+      state.r = { x: rr * Math.cos(theta), y: rr * Math.sin(theta) };
+      state.v = omegaCrossR(omega, state.r);
+    } else {
+      // --- SLIDING --- kinetic friction opposes slip, magnitude μ m g ---
+      state.mode = 'sliding';
+      const relVec = sub(v, u);
+      const relMag = len(relVec);
+      if(relMag > 1e-12){
+        const f = mul(mul(relVec, -1/relMag), mu * m * g); // opposite slip
+        const a = mul(f, 1/m);
+        state.v = add(v, mul(a, dt));
+      }
+      // Integrate position only in sliding (forces handled above)
+      state.r = add(state.r, mul(state.v, dt));
+    }
+
+    state.t += dt;
+    state.trail.push({...state.r}); if(state.trail.length>1500) state.trail.shift();
+
+    // Leave the disk if beyond edge
+    if(len(state.r) >= state.R && state.mode !== 'airborne'){
+      const rnow = state.r; const rnowMag = len(rnow);
+      const tangent = { x: -rnow.y/rnowMag, y: rnow.x/rnowMag };
+      state.tangent = { p: {...state.r}, dir: tangent };
+      state.mode = 'airborne';
+    }
+
+    ui.status.textContent = state.mode + (state.mode==='sticking' ? ' (rigid rotation)' : state.mode==='sliding' ? ' (kinetic friction)' : '');
+    pushCSV();
+  }
+
+  function loop(ts){
+    if(lastT===null) lastT = ts;
+    const dtMS = ts - lastT; lastT = ts;
+    // Sim dt in seconds with clamp for stability
+    const dt = Math.min(0.033, dtMS/1000); // up to ~30 FPS physics
+    if(running) integrate2(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // --- UI wiring ---
+  ui.mu.addEventListener('input', syncLabels);
+  ui.omega.addEventListener('input', syncLabels);
+  ui.r0.addEventListener('input', syncLabels);
+  ui.R.addEventListener('input', syncLabels);
+  ui.m.addEventListener('input', syncLabels);
+
+  ui.reset.addEventListener('click', ()=> reset(false));
+  ui.randomize.addEventListener('click', ()=> reset(true));
+  ui.pause.addEventListener('click', ()=> { running = !running; ui.pause.textContent = running ? 'Pause' : 'Resume'; });
+  ui.step.addEventListener('click', ()=> { if(!running){ integrate2(1/60); draw(); }});
+
+  ui.export.addEventListener('click', ()=>{
+    const blob = new Blob([csv.map(r=>r.join(',')).join('\n')], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'penny_disk_data.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // Recompute initial velocity to match ω when user changes ω while sticking
+  function liveOmegaLock(){
+    if(state && state.mode==='sticking'){
+      state.v = omegaCrossR(state.omega, state.r);
+    }
+    requestAnimationFrame(liveOmegaLock);
+  }
+
+  // Init
+  reset(false);
+  requestAnimationFrame(loop);
+  requestAnimationFrame(liveOmegaLock);
+  </script>
+</body>
+</html>

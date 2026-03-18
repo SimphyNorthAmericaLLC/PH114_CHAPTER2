@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_4_3.html</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: monospace;
+    padding: 15px;
+}
+
+.editor {
+    display: flex;
+    border: 1px solid #444;
+    height: 320px;
+}
+
+#lineNumbers {
+    background: #111;
+    color: #00ff00;
+    padding: 10px 8px;
+    margin: 0;
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+    white-space: pre;
+    line-height: 1.4em;
+}
+
+#code {
+    flex: 1;
+    background: #111;
+    color: white;
+    border: none;
+    padding: 10px;
+    resize: none;
+    overflow: auto;
+    white-space: pre;
+    line-height: 1.4em;
+    font-family: monospace;
+}
+
+button {
+    margin-top: 10px;
+    margin-right: 6px;
+    padding: 8px 14px;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#output {
+    background: #111;
+    padding: 10px;
+    margin-top: 10px;
+    min-height: 50px;
+    white-space: pre-wrap;
+}
+
+#plot {
+    margin-top: 10px;
+    border: 1px solid #555;
+    max-width: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<h3>EXP_2_4_3.html</h3>
+
+<div class="editor">
+<pre id="lineNumbers"></pre>
+<textarea id="code" wrap="off">import numpy as np
+import matplotlib.pyplot as plt
+
+import matplotlib
+matplotlib.use("Agg")
+
+plt.rcParams.update({
+    'figure.facecolor': 'white',
+    'axes.facecolor': 'white',
+    'axes.labelsize': 11,
+    'axes.titlesize': 13,
+    'axes.linewidth': 1.1,
+    'xtick.labelsize': 9,
+    'ytick.labelsize': 9
+})
+
+
+# Define parameters
+m = 0.1  # mass (kg)
+g = 9.81  # acceleration due to gravity (m/s^2)
+a_values = np.linspace(0.1, 2, 10)  # coefficient values
+v0 = 0  # initial velocity (m/s)
+h0 = 200  # initial height (m)
+t_final = 50  # extended final time to allow for thruster effects (s)
+dt = 0.01  # time step (s)
+thrust_duration = 3  # thruster active duration (s)
+thrust_accel = 10  # upward acceleration due to thrusters (m/s^2)
+landing_speed_threshold = 3  # target landing speed (m/s)
+
+# Function to calculate acceleration including air drag
+def acceleration(v, a, thrust_active):
+    drag = 0.05 * v**a / m if v > 0 else -0.05 * abs(v)**a / m
+    if thrust_active:
+        return g - drag - thrust_accel
+    return g - drag
+
+# Function to integrate motion with thruster activation
+def integrate_motion(a):
+    t_values = np.arange(0, t_final, dt)
+    v_values = np.zeros_like(t_values)
+    h_values = np.zeros_like(t_values)
+    v = v0
+    h = h0
+    thruster_activation_time = None
+    
+    for i, t in enumerate(t_values):
+        v_values[i] = v
+        h_values[i] = h
+        
+        # Check if thruster should be activated
+        if h > 0 and thruster_activation_time is None and v > landing_speed_threshold:
+            thruster_activation_time = t
+        
+        thrust_active = thruster_activation_time is not None and t < thruster_activation_time + thrust_duration
+        
+        a_current = acceleration(v, a, thrust_active)
+        v += a_current * dt
+        h -= v * dt
+        
+        if h <= 0:
+            break
+    
+    return t_values[:i+1], h_values[:i+1], v_values[:i+1], thruster_activation_time
+
+# Create subplots for altitude vs. time and speed vs. time
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
+
+# Plot results for different values of a
+for a in a_values:
+    t, h, v, thruster_time = integrate_motion(a)
+    label = f'a = {a:.2f}' + (f', Thruster at {thruster_time:.2f}s' if thruster_time else '')
+    ax1.plot(t, h, label=label)
+    ax2.plot(t, v, label=label)
+
+ax1.set_xlabel('Time (s)')
+ax1.set_ylabel('Altitude (m)')
+ax1.set_title('Altitude of the Falling Object with Air Drag and Thrusters')
+ax1.legend()
+ax1.set_ylim(0, 200)
+ax1.grid(True)
+
+ax2.set_xlabel('Time (s)')
+ax2.set_ylabel('Speed (m/s)')
+ax2.set_title('Speed of the Falling Object with Air Drag and Thrusters')
+ax2.legend()
+ax2.grid(True)
+
+plt.tight_layout()
+
+
+plt.tight_layout()
+plt.savefig("plot.png")
+plt.savefig("plot.pdf")
+plt.savefig("plot.svg")
+</textarea>
+</div>
+
+<button onclick="runCode()">Run</button>
+<button onclick="downloadPlot('png')">Download PNG</button>
+<button onclick="downloadPlot('pdf')">Download PDF</button>
+<button onclick="downloadPlot('svg')">Download SVG</button>
+
+<div id="output"></div>
+<img id="plot"/>
+
+<script>
+let pyodideReady = loadPyodide();
+let pyodide;
+
+const code = document.getElementById("code");
+const lineNumbers = document.getElementById("lineNumbers");
+
+function updateLineNumbers() {
+    const lines = code.value.split("\n").length;
+    let numbers = "";
+    for (let i = 1; i <= lines; i++) {
+        numbers += i + "\n";
+    }
+    lineNumbers.textContent = numbers;
+}
+
+code.addEventListener("input", updateLineNumbers);
+code.addEventListener("scroll", () => {
+    lineNumbers.scrollTop = code.scrollTop;
+});
+
+updateLineNumbers();
+
+async function runCode() {
+    pyodide = await pyodideReady;
+
+    document.getElementById("output").innerText = "Running...";
+    document.getElementById("plot").src = "";
+
+    await pyodide.loadPackage(["numpy","matplotlib"]);
+
+    try {
+        await pyodide.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+`);
+
+        await pyodide.runPythonAsync(code.value);
+
+        let output = await pyodide.runPythonAsync("sys.stdout.getvalue()");
+        document.getElementById("output").innerText = output;
+
+        let img = pyodide.FS.readFile("plot.png", {encoding:"binary"});
+        let blob = new Blob([img], {type:"image/png"});
+        document.getElementById("plot").src = URL.createObjectURL(blob);
+
+    } catch(err) {
+        document.getElementById("output").innerText = err;
+    }
+}
+
+function downloadPlot(format) {
+    try {
+        let file = pyodide.FS.readFile("plot." + format, {encoding:"binary"});
+        let blob = new Blob([file], {type:"application/octet-stream"});
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "plot." + format;
+        link.click();
+    } catch(err) {
+        alert("Run the code first to generate the plot.");
+    }
+}
+</script>
+
+</body>
+</html>

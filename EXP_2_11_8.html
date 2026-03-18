@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_11_8.html</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: monospace;
+    padding: 15px;
+}
+
+.editor {
+    display: flex;
+    border: 1px solid #444;
+    height: 320px;
+}
+
+#lineNumbers {
+    background: #111;
+    color: #00ff00;
+    padding: 10px 8px;
+    margin: 0;
+    text-align: right;
+    overflow: hidden;
+    white-space: pre;
+}
+
+#code {
+    flex: 1;
+    background: #111;
+    color: white;
+    border: none;
+    padding: 10px;
+    resize: none;
+    overflow: auto;
+    white-space: pre;
+}
+
+button {
+    margin-top: 10px;
+    padding: 8px 14px;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#output {
+    background: #111;
+    padding: 10px;
+    margin-top: 10px;
+    min-height: 120px;
+    white-space: pre;
+    overflow-y: auto;
+}
+</style>
+</head>
+
+<body>
+
+<h3>EXP_2_11_8.html</h3>
+
+<div class="editor">
+<pre id="lineNumbers"></pre>
+<textarea id="code" wrap="off">import numpy as np
+
+# Constants
+G = 6.67430e-11  # gravitational constant, m^3 kg^-1 s^-2
+M_sun = 1.989e30  # mass of the Sun, kg
+AU = 1.496e11  # astronomical unit, m
+c = 3.0e8  # speed of light, m/s
+
+# Mercury's orbital parameters
+a = 0.387 * AU  # semi-major axis, m
+e = 0.205  # eccentricity
+T = 87.969  # orbital period, days
+T_seconds = T * 24 * 3600  # orbital period, seconds
+precession_observed = 43 / 3600  # observed precession per century in arcseconds
+
+# Precession due to Newtonian mechanics (per orbit)
+precession_newtonian = 0.0  # degrees per orbit (simplified model)
+# Precession due to General Relativity (per orbit)
+precession_relativity = 42.98 / 3600 / 365.25 * T  # degrees per orbit
+
+# Function to determine the Newtonian orbit
+def orbit_newtonian(a, e, T_seconds, num_points=1000):
+    theta = np.linspace(0, 2 * np.pi, num_points)
+    r = a * (1 - e**2) / (1 + e * np.cos(theta))
+    x = r * np.cos(theta)
+    y = r * np.sin(theta)
+    return x, y
+
+# Function to determine the relativistic orbit
+def orbit_relativity(a, e, T_seconds, precession_per_orbit, num_points=1000):
+    theta = np.linspace(0, 2 * np.pi, num_points)
+    precession = np.deg2rad(precession_per_orbit)
+    r = a * (1 - e**2) / (1 + e * np.cos(theta))
+    theta_precessed = theta + precession
+    x = r * np.cos(theta_precessed)
+    y = r * np.sin(theta_precessed)
+    return x, y
+
+# Generate the orbits
+x_newtonian, y_newtonian = orbit_newtonian(a, e, T_seconds)
+x_relativity, y_relativity = orbit_relativity(a, e, T_seconds, precession_relativity)
+
+# Print the coordinates side by side
+print(f"{'Newtonian (x, y)':>30} | {'Relativistic (x, y)':>30}")
+print('-' * 65)
+for i in range(len(x_newtonian)):
+    print(f"({x_newtonian[i]:.3e}, {y_newtonian[i]:.3e}) | ({x_relativity[i]:.3e}, {y_relativity[i]:.3e})")
+</textarea>
+</div>
+
+<button onclick="runCode()">Run</button>
+
+<div id="output"></div>
+
+<script>
+let pyodideReady = loadPyodide();
+let pyodide;
+
+const code = document.getElementById("code");
+const lineNumbers = document.getElementById("lineNumbers");
+
+function updateLineNumbers() {
+    const lines = code.value.split("\n").length;
+    let numbers = "";
+    for (let i = 1; i <= lines; i++) numbers += i + "\n";
+    lineNumbers.textContent = numbers;
+}
+
+code.addEventListener("input", updateLineNumbers);
+code.addEventListener("scroll", () => lineNumbers.scrollTop = code.scrollTop);
+updateLineNumbers();
+
+async function runCode() {
+    pyodide = await pyodideReady;
+    document.getElementById("output").innerText = "Running...";
+
+    await pyodide.loadPackage(["numpy"]);
+
+    try {
+        await pyodide.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+`);
+
+        await pyodide.runPythonAsync(code.value);
+        let output = await pyodide.runPythonAsync("sys.stdout.getvalue()");
+        document.getElementById("output").innerText = output;
+    } catch(err) {
+        document.getElementById("output").innerText = err;
+    }
+}
+</script>
+
+</body>
+</html>

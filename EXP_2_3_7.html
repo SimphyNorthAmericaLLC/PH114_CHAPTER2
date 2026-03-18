@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_3_7.html</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: monospace;
+    padding: 15px;
+}
+
+.editor {
+    display: flex;
+    border: 1px solid #444;
+    height: 300px;
+}
+
+#lineNumbers {
+    background: #111;
+    color: #00ff00;
+    padding: 10px 8px;
+    margin: 0;
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+    white-space: pre;
+    line-height: 1.4em;
+}
+
+#code {
+    flex: 1;
+    background: #111;
+    color: white;
+    border: none;
+    padding: 10px;
+    resize: none;
+    overflow: auto;
+    white-space: pre;
+    line-height: 1.4em;
+    font-family: monospace;
+}
+
+button {
+    margin-top: 10px;
+    padding: 8px 14px;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#output {
+    background: #111;
+    padding: 10px;
+    margin-top: 10px;
+    min-height: 50px;
+    white-space: pre-wrap;
+}
+</style>
+</head>
+
+<body>
+
+<h3>EXP_2_3_7.html</h3>
+
+<div class="editor">
+<pre id="lineNumbers"></pre>
+<textarea id="code" wrap="off">import sympy as sp
+
+# Step 0: Define symbols
+t = sp.symbols('t', real=True)
+u = sp.Function('u')(t)
+
+# Step 1: Define the differential equation
+ode = sp.Eq(sp.Derivative(u, t), 2 - 0.4 * u)
+
+print("Step 1: Original ODE:")
+sp.pprint(ode)
+print("\n")
+
+# Step 2: Rewrite in standard linear form: du/dt + P(t) * u = Q(t)
+# Move all terms to LHS
+lhs = sp.Derivative(u, t) + 0.4*u
+rhs = 2
+print("Step 2: Standard linear form:")
+sp.pprint(sp.Eq(lhs, rhs))
+print("\n")
+
+# Step 3: Find the integrating factor μ(t) = exp(∫P(t) dt)
+P = 0.4
+mu = sp.exp(sp.integrate(P, t))
+print("Step 3: Integrating Factor μ(t):")
+sp.pprint(mu)
+print("\n")
+
+# Step 4: Multiply both sides by μ(t)
+lhs_new = mu * lhs
+rhs_new = mu * rhs
+print("Step 4: Multiply both sides by μ(t):")
+sp.pprint(sp.Eq(lhs_new, rhs_new))
+print("\n")
+
+# Step 5: Left-hand side is the derivative of (μ(t) * u)
+# ∫ d/dt(μ(t) * u) dt = ∫ RHS dt
+lhs_integrated = sp.integrate(rhs_new, t)
+u_times_mu = lhs_integrated + sp.Symbol('C')
+print("Step 5: Integrate both sides:")
+sp.pprint(sp.Eq(mu * u, u_times_mu))
+print("\n")
+
+# Step 6: Solve for u(t)
+u_sol = sp.simplify(u_times_mu / mu)
+print("Step 6: General solution u(t):")
+sp.pprint(sp.Eq(u, u_sol))
+print("\n")
+
+# Step 7: Apply initial condition u(0) = 0
+C = sp.Symbol('C')
+u0 = u_sol.subs({t: 0})
+C_val = sp.solve(u0, C)[0]
+u_particular = u_sol.subs(C, C_val)
+
+print("Step 7: Particular solution with u(0) = 0:")
+sp.pprint(sp.Eq(u, u_particular))
+</textarea>
+</div>
+
+<button onclick="runCode()">Run</button>
+
+<div id="output"></div>
+
+<script>
+let pyodideReady = loadPyodide();
+let pyodide;
+
+const code = document.getElementById("code");
+const lineNumbers = document.getElementById("lineNumbers");
+
+function updateLineNumbers() {
+    const lines = code.value.split("\n").length;
+    let numbers = "";
+    for (let i = 1; i <= lines; i++) {
+        numbers += i + "\n";
+    }
+    lineNumbers.textContent = numbers;
+}
+
+code.addEventListener("input", updateLineNumbers);
+code.addEventListener("scroll", () => {
+    lineNumbers.scrollTop = code.scrollTop;
+});
+
+updateLineNumbers();
+
+async function runCode() {
+    pyodide = await pyodideReady;
+
+    document.getElementById("output").innerText = "Running...";
+
+    await pyodide.loadPackage(["sympy"]);
+
+    try {
+        await pyodide.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+`);
+
+        await pyodide.runPythonAsync(code.value);
+
+        let output = await pyodide.runPythonAsync("sys.stdout.getvalue()");
+        document.getElementById("output").innerText = output;
+
+    } catch(err) {
+        document.getElementById("output").innerText = err;
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_2_8.html</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: monospace;
+    padding: 15px;
+}
+
+.editor {
+    display: flex;
+    border: 1px solid #444;
+    height: 300px;
+}
+
+#lineNumbers {
+    background: #111;
+    color: #00ff00;
+    padding: 10px 8px;
+    margin: 0;
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+    white-space: pre;
+    line-height: 1.4em;
+}
+
+#code {
+    flex: 1;
+    background: #111;
+    color: white;
+    border: none;
+    padding: 10px;
+    resize: none;
+    overflow: auto;
+    white-space: pre;
+    line-height: 1.4em;
+    font-family: monospace;
+}
+
+button {
+    margin-top: 10px;
+    margin-right: 6px;
+    padding: 8px 14px;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#output {
+    background: #111;
+    padding: 10px;
+    margin-top: 10px;
+    min-height: 50px;
+    white-space: pre-wrap;
+}
+
+#plot {
+    margin-top: 10px;
+    border: 1px solid #555;
+    max-width: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<h3>EXP_2_2_8.html</h3>
+
+<div class="editor">
+<pre id="lineNumbers"></pre>
+<textarea id="code" wrap="off">import numpy as np
+import matplotlib.pyplot as plt
+
+import matplotlib
+matplotlib.use("Agg")
+
+plt.rcParams.update({
+    'figure.facecolor': 'white',
+    'axes.facecolor': 'white',
+    'axes.labelsize': 12,
+    'axes.titlesize': 14,
+    'axes.linewidth': 1.2,
+    'xtick.labelsize': 10,
+    'ytick.labelsize': 10
+})
+
+from scipy.integrate import solve_ivp
+
+# Parameters
+m = 0.2  # mass in kg
+g = 9.81  # gravity in m/s^2
+
+def motion(t, y):
+    """
+    Defines the ODE for motion.
+    y[0] = horizontal position (x)
+    y[1] = horizontal velocity (v_x)
+    y[2] = vertical position (y)
+    y[3] = vertical velocity (v_y)
+    """
+    dydt = [y[1], 2 * t / m, y[3], (2 * t / m) - g]
+    return dydt
+
+# Initial conditions
+y0 = [0, 0, 0, 0]  # Initial x, v_x, y, v_y
+
+# Time span
+t_span = (0, 3)
+t_eval = np.linspace(0, 3, 1000)
+
+# Solve the ODE
+solution = solve_ivp(motion, t_span, y0, t_eval=t_eval)
+
+# Extract results
+t = solution.t
+x = solution.y[0]
+vx = solution.y[1]
+y = solution.y[2]
+vy = solution.y[3]
+
+# === EVALUATION AT t = 1.5 s ===
+t_target = 1.5
+idx = np.argmin(np.abs(t - t_target))
+
+print(f"At t = {t[idx]:.3f} s:")
+print(f"x  = {x[idx]:.6f} m")
+print(f"v_x = {vx[idx]:.6f} m/s")
+print(f"y  = {y[idx]:.6f} m")
+print(f"v_y = {vy[idx]:.6f} m/s")
+
+# Plot the results
+plt.figure(figsize=(10, 5))
+plt.plot(t, x, label="x(t) - Horizontal Position")
+plt.plot(t, y, label="y(t) - Vertical Position")
+plt.xlabel("Time (s)")
+plt.ylabel("Position (m)")
+plt.title("Position vs Time")
+plt.legend()
+plt.grid()
+plt.tight_layout()
+
+
+plt.tight_layout()
+plt.savefig("plot.png")
+plt.savefig("plot.pdf")
+plt.savefig("plot.svg")
+</textarea>
+</div>
+
+<button onclick="runCode()">Run</button>
+<button onclick="downloadPlot('png')">Download PNG</button>
+<button onclick="downloadPlot('pdf')">Download PDF</button>
+<button onclick="downloadPlot('svg')">Download SVG</button>
+
+<div id="output"></div>
+<img id="plot"/>
+
+<script>
+let pyodideReady = loadPyodide();
+let pyodide;
+
+const code = document.getElementById("code");
+const lineNumbers = document.getElementById("lineNumbers");
+
+function updateLineNumbers() {
+    const lines = code.value.split("\n").length;
+    let numbers = "";
+    for (let i = 1; i <= lines; i++) {
+        numbers += i + "\n";
+    }
+    lineNumbers.textContent = numbers;
+}
+
+code.addEventListener("input", updateLineNumbers);
+code.addEventListener("scroll", () => {
+    lineNumbers.scrollTop = code.scrollTop;
+});
+
+updateLineNumbers();
+
+async function runCode() {
+    pyodide = await pyodideReady;
+
+    document.getElementById("output").innerText = "Running...";
+    document.getElementById("plot").src = "";
+
+    await pyodide.loadPackage(["numpy","matplotlib","scipy"]);
+
+    try {
+        await pyodide.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+`);
+
+        await pyodide.runPythonAsync(code.value);
+
+        let output = await pyodide.runPythonAsync("sys.stdout.getvalue()");
+        document.getElementById("output").innerText = output;
+
+        let img = pyodide.FS.readFile("plot.png", {encoding:"binary"});
+        let blob = new Blob([img], {type:"image/png"});
+        document.getElementById("plot").src = URL.createObjectURL(blob);
+
+    } catch(err) {
+        document.getElementById("output").innerText = err;
+    }
+}
+
+function downloadPlot(format) {
+    try {
+        let file = pyodide.FS.readFile("plot." + format, {encoding:"binary"});
+        let blob = new Blob([file], {type:"application/octet-stream"});
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "plot." + format;
+        link.click();
+    } catch(err) {
+        alert("Run the code first to generate the plot.");
+    }
+}
+</script>
+
+</body>
+</html>

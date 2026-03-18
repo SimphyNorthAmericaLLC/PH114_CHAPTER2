@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>forces_quiz_4a</title>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 600px;
+}
+
+.question {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #2a2a2a;
+    border-radius: 8px;
+}
+
+.answers button {
+    display: block;
+    margin: 6px 0;
+    padding: 8px 12px;
+    width: 100%;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.answers button:hover {
+    background: #005f99;
+}
+
+.correct {
+    background: #2e7d32 !important;
+}
+
+.wrong {
+    background: #c62828 !important;
+}
+
+#result {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>Forces Quiz 4A</h2>
+<div id="quiz"></div>
+<div id="result"></div>
+</div>
+
+<script>
+
+const quizData = [
+{
+    question: "Sketch the forces acting on the ball. From this FBD we find that the normal force acting on the ball is",
+    options: [
+        "None of these apply",
+        "mg cos(ψ)",
+        "mg cos(ψ)^2",
+        "mg cos(ψ) + mg sin(ψ)"
+    ],
+    correct: 1
+},
+{
+    question: "Sketch the forces acting on the plane. Careful! You also need to consider the 'normal' force acted from the ball on the plane, in addition to the normal force from the ground on the plane. As a result the scale’s reading will be",
+    options: [
+        "N",
+        "2N",
+        "None of these apply",
+        "N + N cos(ψ)"
+    ],
+    correct: 3
+},
+{
+    question: "And the reading in terms of m, ψ",
+    options: [
+        "mg + mg cos(ψ)",
+        "mg + mg cos²(ψ)",
+        "2mg",
+        "None of these apply"
+    ],
+    correct: 1
+}
+];
+
+let score = 0;
+let answered = 0;
+
+function loadQuiz() {
+    const quizContainer = document.getElementById("quiz");
+
+    quizData.forEach((q) => {
+        const div = document.createElement("div");
+        div.className = "question";
+
+        const title = document.createElement("p");
+        title.innerText = q.question;
+        div.appendChild(title);
+
+        const answersDiv = document.createElement("div");
+        answersDiv.className = "answers";
+
+        q.options.forEach((option, i) => {
+            const btn = document.createElement("button");
+            btn.innerText = option;
+
+            btn.onclick = () => {
+                if (btn.classList.contains("correct") || btn.classList.contains("wrong")) return;
+
+                answered++;
+
+                if (i === q.correct) {
+                    btn.classList.add("correct");
+                    score++;
+                } else {
+                    btn.classList.add("wrong");
+                }
+
+                if (answered === quizData.length) {
+                    document.getElementById("result").innerText =
+                        "Final Score: " + score + " / " + quizData.length;
+                }
+            };
+
+            answersDiv.appendChild(btn);
+        });
+
+        div.appendChild(answersDiv);
+        quizContainer.appendChild(div);
+    });
+}
+
+loadQuiz();
+
+</script>
+
+</body>
+</html>

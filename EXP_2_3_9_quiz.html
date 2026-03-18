@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_3_9_quiz</title>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 600px;
+}
+
+.question {
+    margin-bottom: 20px;
+    padding: 20px;
+    background: #2a2a2a;
+    border-radius: 8px;
+}
+
+.answers button {
+    display: block;
+    margin: 6px 0;
+    padding: 8px 12px;
+    width: 100%;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: left;
+}
+
+.answers button:hover {
+    background: #005f99;
+}
+
+.correct {
+    background: #2e7d32 !important;
+}
+
+.wrong {
+    background: #c62828 !important;
+}
+
+#result {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>EXP_2_3_9 Quiz</h2>
+
+<div class="question">
+<p><strong>What is the correct expression for h?</strong></p>
+<div id="answers" class="answers"></div>
+</div>
+
+<div id="result"></div>
+</div>
+
+<script>
+
+let options = [
+    {text:"h = (u₀²) / (2g(1 + μ cot(ϕ)))", correct:true},
+    {text:"h = (u₀²) / (g(1 + μ cot(ϕ)))", correct:false},
+    {text:"h = (u₀) / (2g(1 + μ cot(ϕ)))", correct:false},
+    {text:"h = (u₀²) / (2g(1 - μ cot(ϕ)))", correct:false},
+    {text:"None of these apply", correct:false},
+    {text:"h = (u₀²) / (4g(1 + μ cot(ϕ)))", correct:false},
+    {text:"h = (2u₀²) / (2g(1 + μ cot(ϕ)))", correct:false},
+    {text:"h = (u₀²) / (2g(1 + μ tan(ϕ)))", correct:false},
+    {text:"h = (u₀²) / (3g(1 + μ cot(ϕ)))", correct:false},
+    {text:"h = (u₀²) / (2g(1 + μ cos(ϕ)))", correct:false}
+];
+
+// Shuffle options
+options.sort(() => Math.random() - 0.5);
+
+const answersDiv = document.getElementById("answers");
+let answered = false;
+
+options.forEach(option => {
+    const btn = document.createElement("button");
+    btn.innerText = option.text;
+
+    btn.onclick = () => {
+        if (answered) return;
+        answered = true;
+
+        if (option.correct) {
+            btn.classList.add("correct");
+            document.getElementById("result").innerText = "✅ Correct! The key is 2466.";
+        } else {
+            btn.classList.add("wrong");
+            document.getElementById("result").innerText = "❌ Incorrect. Try again!";
+        }
+    };
+
+    answersDiv.appendChild(btn);
+});
+
+</script>
+
+</body>
+</html>

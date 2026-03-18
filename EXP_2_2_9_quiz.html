@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_2_9_quiz</title>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 600px;
+}
+
+.question {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #2a2a2a;
+    border-radius: 8px;
+}
+
+.answers button {
+    display: block;
+    margin: 6px 0;
+    padding: 8px 12px;
+    width: 100%;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.answers button:hover {
+    background: #005f99;
+}
+
+.correct {
+    background: #2e7d32 !important;
+}
+
+.wrong {
+    background: #c62828 !important;
+}
+
+#result {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>EXP_2_2_9 Quiz</h2>
+
+<div class="question">
+<p><strong>What is the correct expression for the scale's reading?</strong></p>
+<div id="answers" class="answers"></div>
+</div>
+
+<div id="result"></div>
+</div>
+
+<script>
+
+let options = [
+    {text:"mg + mg cos θ", correct:false},
+    {text:"mg + mg cos θ sin θ", correct:false},
+    {text:"mg + mg cos² θ", correct:true},
+    {text:"mg + mg sin² θ", correct:false},
+    {text:"2 mg", correct:false},
+    {text:"mg cos² θ + mg/2", correct:false},
+    {text:"mg + mg tan θ", correct:false},
+    {text:"mg sin² θ + mg", correct:false},
+    {text:"mg (2 + cos² θ)", correct:false},
+    {text:"mg (2 + sin² θ)", correct:false}
+];
+
+// Shuffle options
+options.sort(() => Math.random() - 0.5);
+
+const answersDiv = document.getElementById("answers");
+let answered = false;
+
+options.forEach(option => {
+    const btn = document.createElement("button");
+    btn.innerText = option.text;
+
+    btn.onclick = () => {
+        if (answered) return;
+        answered = true;
+
+        if (option.correct) {
+            btn.classList.add("correct");
+            document.getElementById("result").innerText = "✅ Correct!";
+        } else {
+            btn.classList.add("wrong");
+            document.getElementById("result").innerText = "❌ Incorrect.";
+        }
+    };
+
+    answersDiv.appendChild(btn);
+});
+
+</script>
+
+</body>
+</html>

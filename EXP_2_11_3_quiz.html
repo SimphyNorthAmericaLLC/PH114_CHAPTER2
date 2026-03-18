@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_11_3_quiz</title>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 700px;
+}
+
+.question {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #2a2a2a;
+    border-radius: 8px;
+}
+
+.answers button {
+    display: block;
+    margin: 6px 0;
+    padding: 8px 12px;
+    width: 100%;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: left;
+}
+
+.answers button:hover {
+    background: #005f99;
+}
+
+.correct {
+    background: #2e7d32 !important;
+}
+
+.wrong {
+    background: #c62828 !important;
+}
+
+#score {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>EXP_2_11_3 Quiz</h2>
+<div id="quiz"></div>
+<div id="score"></div>
+</div>
+
+<script>
+
+let questions = [
+{
+    question: "Solve GM_E = gR_E^2 for the Earth's mass and get",
+    options: [
+        {text:"5.98 × 10^24 Kg", correct:true},
+        {text:"5.98 × 10^25 Kg", correct:false},
+        {text:"5.98 × 10^23 Kg", correct:false},
+        {text:"5.98 × 10^26 Kg", correct:false}
+    ]
+},
+{
+    question: "Estimate an average gravitational attraction on the Sun’s surface given that its mass is about 2 × 10^30 Kg and its radius is about 109 times greater than the Earth’s radius.",
+    options: [
+        {text:"~28 g", correct:true},
+        {text:"~38 g", correct:false},
+        {text:"~18 g", correct:false},
+        {text:"~48 g", correct:false}
+    ]
+},
+{
+    question: "Do the same for Mars; R_M = 3.37 × 10^6 km and M_M = 6.42 × 10^24 Kg",
+    options: [
+        {text:"~3.8 m/s^2", correct:true},
+        {text:"~2.8 m/s^2", correct:false},
+        {text:"~4.8 m/s^2", correct:false},
+        {text:"~5.8 m/s^2", correct:false}
+    ]
+},
+{
+    question: "A stellar black hole of a radius about 10 times the Sun’s radius and also 10 times the Sun’s mass. Based on the above said, Calculate the gravitational acceleration at the horizon.",
+    options: [
+        {text:"~27.5 m/s^2", correct:true},
+        {text:"~28.5 m/s^2", correct:false},
+        {text:"~29.5 m/s^2", correct:false},
+        {text:"~30.5 m/s^2", correct:false}
+    ]
+},
+{
+    question: "Any comments on the result?",
+    options: [
+        {text:"Newtonian gravity does not work at such short distances from a black hole", correct:true},
+        {text:"This is a perfectly normal result", correct:false}
+    ]
+},
+{
+    question: "If the Sun turns into a black hole, its mass overall will remain the same, but its distribution will change, in that it would be concentrated along a much smaller radius (Schwarzschild radius). In light of this how would the Earth’s orbital speed change, if the Sun changes to a black hole",
+    options: [
+        {text:"It will remain the exact same since the orbiter’s speed depends on the mass of the star", correct:true},
+        {text:"It will uncontrollably increase to infinity", correct:false},
+        {text:"It will uncontrollably decrease to zero", correct:false},
+        {text:"None of these", correct:false}
+    ]
+}
+];
+
+const quizDiv = document.getElementById("quiz");
+let score = 0;
+let answered = 0;
+
+questions.forEach((q, index) => {
+
+    q.options.sort(() => Math.random() - 0.5);
+
+    const questionDiv = document.createElement("div");
+    questionDiv.className = "question";
+
+    const questionText = document.createElement("p");
+    questionText.innerHTML = "<strong>" + (index+1) + ". " + q.question + "</strong>";
+    questionDiv.appendChild(questionText);
+
+    const answersDiv = document.createElement("div");
+    answersDiv.className = "answers";
+
+    q.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.innerText = option.text;
+
+        btn.onclick = () => {
+            if (btn.classList.contains("correct") || btn.classList.contains("wrong")) return;
+
+            if (option.correct) {
+                btn.classList.add("correct");
+                score++;
+            } else {
+                btn.classList.add("wrong");
+            }
+
+            answered++;
+            if (answered === questions.length) {
+                document.getElementById("score").innerText =
+                    "Final Score: " + score + " / " + questions.length;
+            }
+        };
+
+        answersDiv.appendChild(btn);
+    });
+
+    questionDiv.appendChild(answersDiv);
+    quizDiv.appendChild(questionDiv);
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_9_8_quiz</title>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 650px;
+}
+
+.question {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #2a2a2a;
+    border-radius: 8px;
+}
+
+.answers button {
+    display: block;
+    margin: 6px 0;
+    padding: 8px 12px;
+    width: 100%;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: left;
+}
+
+.answers button:hover {
+    background: #005f99;
+}
+
+.correct {
+    background: #2e7d32 !important;
+}
+
+.wrong {
+    background: #c62828 !important;
+}
+
+#score {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>EXP_2_9_8 Quiz</h2>
+<div id="quiz"></div>
+<div id="score"></div>
+</div>
+
+<script>
+
+let questions = [
+{
+    question: "As the ball is at its top of its trajectory, the acceleration of the ball will be dependent on",
+    options: [
+        {text:"The ball’s geographical location", correct:true},
+        {text:"The mass of the ball", correct:false},
+        {text:"The initial force you threw the ball with", correct:false},
+        {text:"The angle that you threw the ball", correct:false},
+        {text:"None of these", correct:false}
+    ]
+},
+{
+    question: "Right before the first bounce (i.e. the first landing) the ball’s speed components are",
+    options: [
+        {text:"The exact same as the initial speed", correct:true},
+        {text:"The x-component is zero and the y-component non-zero", correct:false},
+        {text:"The y-component is zero and the x-component non-zero", correct:false},
+        {text:"None of these apply", correct:false}
+    ]
+},
+{
+    question: "Across all bounces it is the ball’s _____ momentum that is conserved throughout",
+    options: [
+        {text:"Horizontal", correct:true},
+        {text:"Vertical", correct:false},
+        {text:"Total", correct:false},
+        {text:"None of these apply", correct:false}
+    ]
+},
+{
+    question: "Across all bounces it is the ball’s _____ momentum that is not conserved throughout",
+    options: [
+        {text:"Horizontal", correct:false},
+        {text:"Vertical", correct:true},
+        {text:"None of these apply", correct:false}
+    ]
+}
+];
+
+const quizDiv = document.getElementById("quiz");
+let score = 0;
+let answeredQuestions = 0;
+
+questions.forEach((q, index) => {
+
+    // Shuffle options
+    q.options.sort(() => Math.random() - 0.5);
+
+    const questionDiv = document.createElement("div");
+    questionDiv.className = "question";
+
+    const questionText = document.createElement("p");
+    questionText.innerHTML = "<strong>" + (index+1) + ". " + q.question + "</strong>";
+    questionDiv.appendChild(questionText);
+
+    const answersDiv = document.createElement("div");
+    answersDiv.className = "answers";
+
+    q.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.innerText = option.text;
+
+        btn.onclick = () => {
+            if (btn.classList.contains("correct") || btn.classList.contains("wrong")) return;
+
+            if (option.correct) {
+                btn.classList.add("correct");
+                score++;
+            } else {
+                btn.classList.add("wrong");
+            }
+
+            answeredQuestions++;
+
+            if (answeredQuestions === questions.length) {
+                document.getElementById("score").innerText =
+                    "Final Score: " + score + " / " + questions.length;
+            }
+        };
+
+        answersDiv.appendChild(btn);
+    });
+
+    questionDiv.appendChild(answersDiv);
+    quizDiv.appendChild(questionDiv);
+});
+
+</script>
+
+</body>
+</html>

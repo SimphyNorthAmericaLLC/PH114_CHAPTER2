@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_2_3_quiz</title>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 600px;
+}
+
+.question {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #2a2a2a;
+    border-radius: 8px;
+}
+
+.answers button {
+    display: block;
+    margin: 6px 0;
+    padding: 8px 12px;
+    width: 100%;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.answers button:hover {
+    background: #005f99;
+}
+
+.correct {
+    background: #2e7d32 !important;
+}
+
+.wrong {
+    background: #c62828 !important;
+}
+
+#result {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>EXP_2_2_3 Quiz</h2>
+<div id="quiz"></div>
+<div id="result"></div>
+</div>
+
+<script>
+
+const quizData = [
+{
+    question: "A box is moving up on an inclined plane of 38°, angle with respect to the horizontal. Its acceleration midway will be about",
+    options: [
+        "9.8 m/s² vertically down",
+        "9.8 m/s² upward along the plane",
+        "6 m/s² upward along the plane",
+        "9.8 m/s² downward along the plane",
+        "6 m/s² downward along the plane"
+    ],
+    correct: 4
+},
+{
+    question: "Is it possible that an object experiences an acceleration that has different direction than the net force that is being exerted on the object?",
+    options: [
+        "It depends on the mass",
+        "No",
+        "Yes"
+    ],
+    correct: 1
+},
+{
+    question: "You throw a stone at an angle, with all your might. At the very top of its trajectory, the stone has acceleration that depends on",
+    options: [
+        "How strongly you threw the stone",
+        "The mass of the stone",
+        "The stone’s geographical location",
+        "The angle that you threw the stone"
+    ],
+    correct: 2
+},
+{
+    question: "The normal force is always",
+    options: [
+        "None of these",
+        "Parallel to both contact surfaces",
+        "Perpendicular to both contact surfaces",
+        "Vertical (like weight)"
+    ],
+    correct: 2
+},
+{
+    question: "The normal force is exerted on the ____ by the ____",
+    options: [
+        "Object, ground",
+        "Ground, ground",
+        "Objection, object",
+        "Ground, object"
+    ],
+    correct: 0
+}
+];
+
+let score = 0;
+let answered = 0;
+
+function loadQuiz() {
+    const quizContainer = document.getElementById("quiz");
+
+    quizData.forEach((q) => {
+        const div = document.createElement("div");
+        div.className = "question";
+
+        const title = document.createElement("p");
+        title.innerText = q.question;
+        div.appendChild(title);
+
+        const answersDiv = document.createElement("div");
+        answersDiv.className = "answers";
+
+        q.options.forEach((option, i) => {
+            const btn = document.createElement("button");
+            btn.innerText = option;
+
+            btn.onclick = () => {
+                if (btn.classList.contains("correct") || btn.classList.contains("wrong")) return;
+
+                answered++;
+
+                if (i === q.correct) {
+                    btn.classList.add("correct");
+                    score++;
+                } else {
+                    btn.classList.add("wrong");
+                }
+
+                if (answered === quizData.length) {
+                    document.getElementById("result").innerText =
+                        "Final Score: " + score + " / " + quizData.length;
+                }
+            };
+
+            answersDiv.appendChild(btn);
+        });
+
+        div.appendChild(answersDiv);
+        quizContainer.appendChild(div);
+    });
+}
+
+loadQuiz();
+
+</script>
+
+</body>
+</html>

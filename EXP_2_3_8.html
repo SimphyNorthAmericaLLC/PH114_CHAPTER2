@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EXP_2_3_8.html</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: monospace;
+    padding: 15px;
+}
+
+.editor {
+    display: flex;
+    border: 1px solid #444;
+    height: 300px;
+}
+
+#lineNumbers {
+    background: #111;
+    color: #00ff00;
+    padding: 10px 8px;
+    margin: 0;
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+    white-space: pre;
+    line-height: 1.4em;
+}
+
+#code {
+    flex: 1;
+    background: #111;
+    color: white;
+    border: none;
+    padding: 10px;
+    resize: none;
+    overflow: auto;
+    white-space: pre;
+    line-height: 1.4em;
+    font-family: monospace;
+}
+
+button {
+    margin-top: 10px;
+    margin-right: 6px;
+    padding: 8px 14px;
+    background: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#output {
+    background: #111;
+    padding: 10px;
+    margin-top: 10px;
+    min-height: 50px;
+    white-space: pre-wrap;
+}
+
+#plot {
+    margin-top: 10px;
+    border: 1px solid #555;
+    max-width: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<h3>EXP_2_3_8.html</h3>
+
+<div class="editor">
+<pre id="lineNumbers"></pre>
+<textarea id="code" wrap="off">import sympy as sp
+import numpy as np
+import matplotlib.pyplot as plt
+
+import matplotlib
+matplotlib.use("Agg")
+
+plt.rcParams.update({
+    'figure.facecolor': 'white',
+    'axes.facecolor': 'white',
+    'axes.labelsize': 12,
+    'axes.titlesize': 14,
+    'axes.linewidth': 1.2,
+    'xtick.labelsize': 10,
+    'ytick.labelsize': 10
+})
+
+
+# Define the symbolic variable and function
+t = sp.symbols('t')
+x = sp.Function('x')(t)
+
+# Define the ODE
+ode = sp.Eq(x.diff(t, t) - 2*x + 0.98, 0)
+
+# Solve the homogeneous part of the ODE
+x_hom = sp.dsolve(x.diff(t, t) - 2*x, x)
+
+# Find a particular solution to the non-homogeneous equation
+x_particular = 0.49
+
+# General solution of the ODE
+x_general = x_hom.rhs + x_particular
+
+# Apply the initial conditions
+C1, C2 = sp.symbols('C1 C2')
+x_general = x_general.subs({x_hom.rhs: C1*sp.exp(sp.sqrt(2)*t) + C2*sp.exp(-sp.sqrt(2)*t)})
+
+# Solve for constants C1 and C2
+initial_conditions = [sp.Eq(x_general.subs(t, 0), 0), sp.Eq(x_general.diff(t).subs(t, 0), 1)]
+constants = sp.solve(initial_conditions, (C1, C2))
+x_sol = x_general.subs(constants)
+
+# Simplify the solution
+x_sol = sp.simplify(x_sol)
+
+# Derive the speed function
+x_speed = sp.simplify(x_sol.diff(t))
+
+# Display the results
+print(f"Position function x(t): {x_sol}")
+print(f"Speed function x'(t): {x_speed}")
+
+# Define the numerical functions for plotting
+x_func = sp.lambdify(t, x_sol, modules=['numpy'])
+x_speed_func = sp.lambdify(t, x_speed, modules=['numpy'])
+
+# Create time values for plotting
+time_values = np.linspace(0, 3, 400)
+
+# Compute position and speed values
+position_values = x_func(time_values)
+speed_values = x_speed_func(time_values)
+
+# Plot the position and speed functions
+plt.figure(figsize=(12, 6))
+
+plt.subplot(2, 1, 1)
+plt.plot(time_values, position_values, label='x(t)')
+plt.title('Position Function x(t)')
+plt.xlabel('Time (t)')
+plt.ylabel('Position (x)')
+plt.legend()
+plt.grid(True)
+
+plt.subplot(2, 1, 2)
+plt.plot(time_values, speed_values, label='x\'(t)', color='red')
+plt.title('Speed Function x\'(t)')
+plt.xlabel('Time (t)')
+plt.ylabel('Speed (dx/dt)')
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+
+
+plt.tight_layout()
+plt.savefig("plot.png")
+plt.savefig("plot.pdf")
+plt.savefig("plot.svg")
+</textarea>
+</div>
+
+<button onclick="runCode()">Run</button>
+<button onclick="downloadPlot('png')">Download PNG</button>
+<button onclick="downloadPlot('pdf')">Download PDF</button>
+<button onclick="downloadPlot('svg')">Download SVG</button>
+
+<div id="output"></div>
+<img id="plot"/>
+
+<script>
+let pyodideReady = loadPyodide();
+let pyodide;
+
+const code = document.getElementById("code");
+const lineNumbers = document.getElementById("lineNumbers");
+
+function updateLineNumbers() {
+    const lines = code.value.split("\n").length;
+    let numbers = "";
+    for (let i = 1; i <= lines; i++) {
+        numbers += i + "\n";
+    }
+    lineNumbers.textContent = numbers;
+}
+
+code.addEventListener("input", updateLineNumbers);
+code.addEventListener("scroll", () => {
+    lineNumbers.scrollTop = code.scrollTop;
+});
+
+updateLineNumbers();
+
+async function runCode() {
+    pyodide = await pyodideReady;
+
+    document.getElementById("output").innerText = "Running...";
+    document.getElementById("plot").src = "";
+
+    await pyodide.loadPackage(["numpy","matplotlib","sympy"]);
+
+    try {
+        await pyodide.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+`);
+
+        await pyodide.runPythonAsync(code.value);
+
+        let output = await pyodide.runPythonAsync("sys.stdout.getvalue()");
+        document.getElementById("output").innerText = output;
+
+        let img = pyodide.FS.readFile("plot.png", {encoding:"binary"});
+        let blob = new Blob([img], {type:"image/png"});
+        document.getElementById("plot").src = URL.createObjectURL(blob);
+
+    } catch(err) {
+        document.getElementById("output").innerText = err;
+    }
+}
+
+function downloadPlot(format) {
+    try {
+        let file = pyodide.FS.readFile("plot." + format, {encoding:"binary"});
+        let blob = new Blob([file], {type:"application/octet-stream"});
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "plot." + format;
+        link.click();
+    } catch(err) {
+        alert("Run the code first to generate the plot.");
+    }
+}
+</script>
+
+</body>
+</html>
