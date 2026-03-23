@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mixed Mechanics Quiz — Restart on Wrong</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.45; margin: 0; padding: 24px; background: #0b0b0b; color: #f2f2f2; }
+  #quiz2 { max-width: 760px; margin: 0 auto; }
+  #q2_stem { margin: .5rem 0 1rem; font-size: 1.05rem; }
+  #q2_options { display: grid; gap: .5rem; }
+  .q2_option { border: 1px solid #333; border-radius: 10px; padding: .6rem .8rem; cursor: pointer; text-align: left; background:#121212; }
+  .q2_option:hover { background: #161616; }
+  #q2_feedback { margin-top: .9rem; min-height: 1.2rem; color:#aaa; }
+  #q2_nav { margin-top: 1rem; display: flex; gap: .6rem; }
+  button { padding: .55rem .9rem; border-radius: 10px; border: 1px solid #333; background: #1b1b1b; color: #f2f2f2; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div id="quiz2">
+    <h3 id="q2_progress"></h3>
+    <div id="q2_stem"></div>
+    <div id="q2_options"></div>
+    <div id="q2_feedback"></div>
+    <div id="q2_nav">
+      <button id="q2_restart" style="margin-left:auto;">Restart</button>
+    </div>
+  </div>
+
+<script>
+/* Exact wording preserved. Option order exactly as provided (no shuffling). */
+const quiz2 = [
+  {
+    stem: "You throw a stone at an angle. At the top of the trajectory, the stone’s acceleration will be dependent on (hint:see chapter 2-2) a) the strength that you threw the rock, b) the rock’s mass, c) if you are on a mountain or not,  d) none of these apply.",
+    choices: ["the strength that you threw the rock","the rock’s mass","if you are on a mountain or not","none of these apply"],
+    correctIndex: 2
+  },
+  {
+    stem: "A lineally-time dependent horizontal force acts on mass that is located at some height H from the ground. The time that it will take the mass to hit the ground is a) proportionally dependent on the force’s magnitude, b) independent of the force’s magnitude, c) inversely proportional to the force’s magnitude.",
+    choices: ["proportionally dependent on the force’s magnitude","independent of the force’s magnitude","inversely proportional to the force’s magnitude"],
+    correctIndex: 1
+  },
+  {
+    stem: "A box rests on an inclined plane of angle Z where the angle is defined with respect to the ground. This means that the friction coefficient μ is a) greater than tan(Z) b) equal to tan(Z) c) less than tan(Z)",
+    choices: ["greater than tan(Z)","equal to tan(Z)","less than tan(Z)"],
+    correctIndex: 0
+  },
+  {
+    stem: "The acceleration of a box sliding down a rough inclined plane of angle Z will always be a) g·sin(Z) - μ·cos(Z) b) g·cos(Z) - μ·sin(Z) c) more information is needed.",
+    choices: ["g·sin(Z) - μ·cos(Z)","g·cos(Z) - μ·sin(Z)","more information is needed"],
+    correctIndex: 2
+  },
+  {
+    stem: "Assume the acceleration of a box down a rough plane is a = g·sin(Z) - μ·cos(Z) where Z is the angle of the plane and μ the friction coefficient. Then if a<0 this means that the box will a) slide up, b) slide down, c) stay put.",
+    choices: ["slide up","slide down","stay put"],
+    correctIndex: 2
+  },
+  {
+    stem: "The friction coefficient values range from a) 0 to 1, b) 0 to 0.99, c) none of these.",
+    choices: ["0 to 1","0 to 0.99","none of these"],
+    correctIndex: 2
+  },
+  {
+    stem: "Friction is a force that a) always exists, b) it requires the existence of another competing force to be estimated, c) is always positive, d) is always negative.",
+    choices: ["always exists","it requires the existence of another competing force to be estimated","is always positive","is always negative"],
+    correctIndex: 1
+  },
+  {
+    stem: "An object of mass m1 lies on a horizontal surface with friction and is connected with a massless and inextensible string to a pulley from which another less massive object m2 (m1>m2) is hanging vertically. The accelerations of m1 and m2 will be a) a1=a2> 0, b) a1>a2, c) a1< a2, or d) a1=a2= 0.",
+    choices: ["a1=a2> 0","a1>a2","a1< a2","a1=a2= 0"],
+    correctIndex: 0
+  },
+  {
+    stem: "RMS Titanic is connected via a mass string to a massless (dummy) pulley to a hanging US penny. If friction is zero across all surfaces, then the RMS Titanic’s acceleration will be a) small but not zero, b) zero.",
+    choices: ["small but not zero","zero"],
+    correctIndex: 0
+  },
+  {
+    stem: "What determines the acceleration of two hanging masses to the left and right of a massless (dummy) pulley is: a) the masses b) the tensions and the masses c) the tensions",
+    choices: ["the masses","the tensions and the masses","the tensions"],
+    correctIndex: 0
+  },
+  {
+    stem: "The fact that accelerations of the objects involved in a dummy pulley motion are equal is a direct stipulation that: a) the string does not break b) the string does not slack c) all of these d) none of these",
+    choices: ["the string does not break","the string does not slack","all of these","none of these"],
+    correctIndex: 2
+  },
+  {
+    stem: "You twirl a stone attached to a string in front of you (along the vertical). The tension on the string will depend on: a) the mass and speed of the stone only b) the mass of the stone only c) the mass, the speed, and the position of the stone only d) none of these apply",
+    choices: ["the mass and speed of the stone only","the mass of the stone only","the mass, the speed, and the position of the stone only","none of these apply"],
+    correctIndex: 2
+  },
+  {
+    stem: "You twirl a stone attached to a string in front of you (along the vertical). The linear (aka tangential) acceleration of the stone is provided by: a) the tension only b) a component of the weight only c) a combination of a component of the tension on the string and the weight d) none of these apply",
+    choices: ["the tension only","a component of the weight only","a combination of a component of the tension on the string and the weight","none of these apply"],
+    correctIndex: 1
+  },
+  {
+    stem: "You twirl a stone attached to a string in front of you (along the vertical). The radial acceleration of the stone is provided by: a) the tension only, b) a component of the weight only, c) a combination of a component of the tension on the string and the weight, d) none of these apply.",
+    choices: ["the tension only","a component of the weight only","a combination of a component of the tension on the string and the weight","none of these apply"],
+    correctIndex: 2
+  },
+  {
+    stem: "A car is driving around a roundabout with constant speed on a zero-friction, i.e. icy road. The centripetal force is essentially a) the normal force, b) the car’s weight, c) the car cannot perform the desired action.",
+    choices: ["the normal force","the car’s weight","the car cannot perform the desired action"],
+    correctIndex: 2
+  }
+];
+
+const els = {
+  progress: document.getElementById('q2_progress'),
+  stem: document.getElementById('q2_stem'),
+  options: document.getElementById('q2_options'),
+  feedback: document.getElementById('q2_feedback'),
+  restart: document.getElementById('q2_restart'),
+};
+
+let idx = 0;
+let score = 0;
+
+function render() {
+  const total = quiz2.length;
+  els.progress.textContent = `Question ${idx+1} of ${total}  ·  Score: ${score}/${total}`;
+  els.stem.textContent = quiz2[idx].stem;
+  els.options.innerHTML = '';
+  els.feedback.textContent = '';
+
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  quiz2[idx].choices.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'q2_option';
+    btn.type = 'button';
+    btn.innerHTML = `<strong>${letters[i]})</strong> ${text}`;
+    btn.addEventListener('click', () => handleChoice(i));
+    els.options.appendChild(btn);
+  });
+}
+
+function handleChoice(i) {
+  const correct = quiz2[idx].correctIndex;
+  if (i === correct) {
+    score++;
+    els.feedback.textContent = 'Correct.';
+    setTimeout(() => {
+      idx++;
+      if (idx < quiz2.length) {
+        render();
+      } else {
+        els.progress.textContent = `Completed · Final Score: ${score}/${quiz2.length}`;
+        els.stem.textContent = 'Quiz finished.';
+        els.options.innerHTML = '';
+        els.feedback.textContent = 'Press Restart to try again.';
+      }
+    }, 600);
+  } else {
+    els.feedback.textContent = 'Incorrect — restarting from Question 1…';
+    setTimeout(() => { idx = 0; score = 0; render(); }, 700);
+  }
+}
+
+els.restart.addEventListener('click', () => { idx = 0; score = 0; render(); });
+render();
+</script>
+</body>
+</html>
